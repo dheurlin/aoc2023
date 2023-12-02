@@ -10,18 +10,18 @@ type Game = [CubeSet]
 
 addCubeSet :: CubeSet -> CubeSet -> CubeSet
 addCubeSet c1 c2 = MkCubeSet { red = red c1 + red c2
-                           , blue = blue c1 + blue c2
-                           , green = green c1 + green c2
-                           }
+                             , blue = blue c1 + blue c2
+                             , green = green c1 + green c2
+                             }
 
 sumCubeSet :: [CubeSet] -> CubeSet
 sumCubeSet = foldr addCubeSet $ MkCubeSet 0 0 0
 
 maxCubeSet :: CubeSet -> CubeSet -> CubeSet
 maxCubeSet c1 c2 = MkCubeSet { red = max (red c1) (red c2)
-                           , blue = max (blue c1) (blue c2)  
-                           , green = max (green c1) (green c2)
-                           }
+                             , blue = max (blue c1) (blue c2)  
+                             , green = max (green c1) (green c2)
+                             }
 
 maximumCubeSet :: [CubeSet] -> CubeSet
 maximumCubeSet = foldr1 maxCubeSet
