@@ -1,8 +1,5 @@
 import Text.Printf ( printf )
-import Data.Maybe (mapMaybe)
-import Data.List (sortBy)
-import Data.Function (on)
-import qualified Data.Map as Map
+import Data.Maybe ( mapMaybe )
 
 -- NOTE: Star 2 is pretty slow, so you need to compile with optimizations for it to run in
 -- reasonable time: `ghc -O2 -o solution solution.hs`
