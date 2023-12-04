@@ -39,10 +39,10 @@ lookupEntry needle (entry:entries)
 type NumberedCard = (Int, Card)
 
 makeCopiesFromScore :: [NumberedCard] -> NumberedCard -> [NumberedCard]
-makeCopiesFromScore originalCards numCard@(index, card) = mapMaybe (`lookupEntry` originalCards) copyIndices
+makeCopiesFromScore originalCards currentCard@(index, card) = mapMaybe (`lookupEntry` originalCards) copyIndices
   where
-    theScore = matchingNumbers card
-    copyIndices = map (+ (index + 1)) [0..theScore - 1]
+    numCopies = matchingNumbers card
+    copyIndices = [index + 1.. index + numCopies]
 
 play :: [NumberedCard] -> [NumberedCard] -> [NumberedCard]
 play originalCards [] = []
