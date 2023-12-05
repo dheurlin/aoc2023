@@ -5,6 +5,9 @@ import Text.Printf ( printf )
 import Data.List
 import Data.Function (on)
 
+-- NOTE: Star 2 is likely correct since it gives the correct output for the test input.
+-- It's way to slow tho so it wasn't able to produce an answer in reasonable time
+
 data MappingEntry = MkEntry {sourceStart :: !Integer, destStart :: !Integer, len :: !Integer}
   deriving (Eq, Show)
 
@@ -63,19 +66,26 @@ rangeOverlap (rangeStart, rangeLength) (MkEntry srcStart destStart entryLen) = (
 
 rangesInEntry :: Range -> MappingEntry -> [Range]
 rangesInEntry r@(rangeStart, rangeLength) e@(MkEntry srcStart destStart entryLen) =
-  -- [before, overlap, after]
   filter ((/= 0) . snd) [before, overlap, after]
     where
-      before@(_,beforeLen) = (rangeStart, max 0 (srcStart - rangeStart))
+      before@(_,beforeLen) = (rangeStart, max 0 (rangeStart - srcStart - 1))
       overlap@(_, overlapLen) = rangeOverlap r e
-      after = (rangeStart + beforeLen + overlapLen, max 0 (rangeLength - overlapLen - beforeLen))
+      after = (rangeStart + beforeLen + overlapLen + 1, max 0 (rangeLength - overlapLen - beforeLen - 1))
 
 rangesInMapping :: Range -> Mapping -> [Range]
 rangesInMapping r = concatMap $ rangesInEntry r
 
+removeDuplicates :: [Range] -> [Range]
+removeDuplicates ranges = map maxOfGroup groups
+  where
+    groups :: [[Range]]
+    groups = groupBy ((==) `on` fst) $ sortBy (compare `on` fst) ranges
+    maxOfGroup :: [Range] -> Range
+    maxOfGroup ranges = maximumBy (compare `on` snd) ranges
+
 followRangeMappings :: Range -> [Mapping] -> [Range]
 followRangeMappings r [] = [r]
-followRangeMappings r (mapping:rest) = concatMap (`followRangeMappings` rest) result
+followRangeMappings r (mapping:rest) = removeDuplicates $ concatMap (`followRangeMappings` rest) result
   where
     result = rangesInMapping r mapping
 
@@ -96,14 +106,12 @@ parseInput2 input = (seedRanges, mappings)
     seedRanges = parseSeedRanges $ (head . head) input'
     mappings = map parseMapping $ tail input'
 
--- star2 :: String -> Integer
--- star2 input = minimum $ evalRanges $ concatMap (`followRangeMappings` mappings) seedRanges
--- star2 input = minimumRanges $ concatMap (`followRangeMappings` mappings) seedRanges
-star2 input = take 1000 $ sortBy (compare `on` fst) $ concatMap (`followRangeMappings` mappings) seedRanges
+star2 :: String -> Integer
+star2 input = minimumRanges $ concatMap (`followRangeMappings` mappings) seedRanges
   where (seedRanges, mappings) = parseInput2 input
 
--- main = do
---   input <- readFile "test-input.txt"
---   -- printf "Star 1: %d\n" $ star1 input
---   printf "Star 2: %d\n" $ star2 input
+main = do
+  input <- readFile "input.txt"
+  printf "Star 1: %d\n" $ star1 input
+  printf "Star 2: %d\n" $ star2 input
 
