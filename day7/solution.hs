@@ -4,7 +4,7 @@ import Data.Maybe
 import Data.Function (on)
 import Text.Printf (printf)
 
-data HandType = HighCard | OnePair | TwoPair | ThreeKind | FullHouse | FourKind | FiveKind
+data HandType = HighCard | OnePair | TwoPair | ThreeOfAKind | FullHouse | FourOfAKind | FiveOfAKind
   deriving ( Eq, Show, Ord )
 
 type CardSet = String
@@ -14,24 +14,27 @@ type CardGrouper = CardSet -> [CardSet]
 groupCards1 :: CardGrouper
 groupCards1 = sortOn (Down . length) . group . sort
 
+-- Ugly, I know. But it appends all jokers to the longtest sub-group of cards
 groupCards2 :: CardGrouper
 groupCards2 "JJJJJ" = ["JJJJJ"]
-groupCards2 cards = zipWith appendJokersIfLongest [0..] (filter ((/= 'J') . head) grouped)
+groupCards2 cards = zipWith appendJokersIfLongest [0..] withoutJokers
   where
     grouped = groupCards1 cards
     jokers = fromMaybe [] $ find ((== 'J') . head) grouped
+    withoutJokers = filter ((/= 'J') . head) grouped
     longestGroupLength = maximum $ map length grouped
     longestGroupIndex = fromJust $ findIndex ((== longestGroupLength) . length) grouped
     appendJokersIfLongest ix group
       | ix == longestGroupIndex = group <> jokers
       | otherwise = group
 
+
 handType :: CardGrouper -> CardSet -> HandType
 handType groupCards cards = case groupCards cards of
-  [_]             -> FiveKind
-  [[_,_,_,_],_]   -> FourKind
+  [[_,_,_,_,_]]   -> FiveOfAKind
+  [[_,_,_,_],_]   -> FourOfAKind
   [[_,_,_],[_,_]] -> FullHouse
-  [[_,_,_],_, _]  -> ThreeKind
+  [[_,_,_],_,_]   -> ThreeOfAKind
   [[_,_],[_,_],_] -> TwoPair
   [[_,_],_,_,_]   -> OnePair
   [_,_,_,_,_]     -> HighCard
