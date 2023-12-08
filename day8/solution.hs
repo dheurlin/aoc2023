@@ -1,7 +1,7 @@
 import qualified Data.Map as Map
 import qualified Control.Monad.Par as Par
 import Control.Monad
-import Data.Maybe ( fromJust, isJust )
+import Data.Maybe ( fromJust )
 import Text.Printf (printf)
 
 type Node = String
@@ -50,28 +50,31 @@ direction 'L' = left
 direction 'R' = right
 direction i = error $ "Bad instruction: " <> show i
 
-follow2 :: Par.IVar (Maybe Int) -> [Par.IVar (Maybe Int)] -> [Instruction] -> Node -> Network -> Par.Par ()
+follow2 :: Par.IVar Bool -> [Par.IVar Bool] -> [Instruction] -> Node -> Network -> Par.Par Int
 follow2 myFlag flags (i:is) curr@[_,_,'Z'] network = do
-  Par.put myFlag (Just 0)
-  othersDone <- all isJust <$> mapM Par.get flags
+  Par.put myFlag True
+  othersDone <- and <$> mapM Par.get flags
   if othersDone
-    then pure ()
+    then pure 5
     else do
-      follow2 myFlag flags is (direction i $ lookup' curr network) network
-      res <- Par.get myFlag
-      Par.put myFlag ((1 + ) <$> res)
+      res <- follow2 myFlag flags is (direction i $ lookup' curr network) network
+      pure $ 1 + res
 follow2 myFlag flags (i:is) curr network = do
-  follow2 myFlag flags is (direction i $ lookup' curr network) network
-  res <- Par.get myFlag
-  Par.put myFlag ((1 + ) <$> res)
+  res <- follow2 myFlag flags is (direction i $ lookup' curr network) network
+  pure $ 1 + res
 follow2 _ _ _ _ _ = error "fuck me"
+
+zipWithM' as bs f = zipWithM f as bs
 
 runFollow2 :: [Instruction] -> Network -> Int
 runFollow2 instructions network = Par.runPar $ do
   let startKeys = filter ((== 'A') . last) $ Map.keys network
-  flags <- replicateM (length startKeys) Par.new
-  zipWithM_ (\key flag -> Par.fork $ follow2 flag flags instructions key network) startKeys flags
-  fromJust <$> Par.get (head flags)
+  flags <- replicateM (length startKeys) (Par.new :: Par.Par (Par.IVar Bool))
+  results <- zipWithM' startKeys flags $ \key flag ->
+    Par.spawn $ follow2 flag flags instructions key network
+    
+  b <- mapM Par.get results
+  pure $ maximum b
 
 star2 :: String -> Int
 star2 input = runFollow2 instructions network
