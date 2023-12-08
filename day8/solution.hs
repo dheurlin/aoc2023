@@ -1,7 +1,7 @@
 import qualified Data.Map as Map
 import qualified Control.Monad.Par as Par
 import Control.Monad
-import Data.Maybe ( fromJust )
+import Data.Maybe ( fromJust, isJust )
 import Text.Printf (printf)
 
 type Node = String
@@ -50,26 +50,28 @@ direction 'L' = left
 direction 'R' = right
 direction i = error $ "Bad instruction: " <> show i
 
-follow2 :: Par.IVar Bool -> [Par.IVar Bool] -> [Instruction] -> Node -> Network -> Par.Par Int
+follow2 :: Par.IVar (Maybe Int) -> [Par.IVar (Maybe Int)] -> [Instruction] -> Node -> Network -> Par.Par ()
 follow2 myFlag flags (i:is) curr@[_,_,'Z'] network = do
-  Par.put myFlag True
-  othersDone <- and <$> mapM Par.get flags
+  Par.put myFlag (Just 0)
+  othersDone <- all isJust <$> mapM Par.get flags
   if othersDone
-    then pure 0
+    then pure ()
     else do
-      res <- follow2 myFlag flags is (direction i $ lookup' curr network) network
-      pure $ 1 + res
+      follow2 myFlag flags is (direction i $ lookup' curr network) network
+      res <- Par.get myFlag
+      Par.put myFlag ((1 + ) <$> res)
 follow2 myFlag flags (i:is) curr network = do
-  res <- follow2 myFlag flags is (direction i $ lookup' curr network) network
-  pure $ 1 + res
+  follow2 myFlag flags is (direction i $ lookup' curr network) network
+  res <- Par.get myFlag
+  Par.put myFlag ((1 + ) <$> res)
 follow2 _ _ _ _ _ = error "fuck me"
 
 runFollow2 :: [Instruction] -> Network -> Int
 runFollow2 instructions network = Par.runPar $ do
   let startKeys = filter ((== 'A') . last) $ Map.keys network
-  flags <- replicateM (length startKeys) (Par.new :: Par.Par (Par.IVar Bool))
-  res <- zipWithM (\key flag -> follow2 flag flags instructions key network) startKeys flags
-  pure $ head res
+  flags <- replicateM (length startKeys) Par.new
+  zipWithM_ (\key flag -> Par.fork $ follow2 flag flags instructions key network) startKeys flags
+  fromJust <$> Par.get (head flags)
 
 star2 :: String -> Int
 star2 input = runFollow2 instructions network
