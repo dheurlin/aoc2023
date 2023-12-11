@@ -1,7 +1,7 @@
-import Data.List
-import Data.Function
-import Data.Maybe
-import Text.Printf
+import Data.List ( tails, transpose )
+import Data.Function ( on )
+import Data.Maybe ( mapMaybe )
+import Text.Printf ( printf )
 
 type Coords = (Int, Int)
 
@@ -58,23 +58,18 @@ pairs l = [(x,y) | (x:ys) <- tails l, y <- ys]
 manhattan :: (Int, Int) -> (Int, Int) -> Int
 manhattan (x1, y1) (x2, y2) = ((+) `on` abs) (x1 - x2) (y1 - y2)
 
-star1Smarter :: String -> Int
-star1Smarter input = sum $ map (uncurry manhattan) galaxyPairs
+solve :: Int -> String -> Int
+solve expansion input = sum $ map (uncurry manhattan) galaxyPairs
   where
     gmap = lines input
-    expanded = expandMap 2 $ makeGalaxyMap gmap
+    expanded = expandMap expansion $ makeGalaxyMap gmap
     galaxyPairs = pairs $ galaxyMapCoords expanded
 
-star2Smarter :: String -> Int
-star2Smarter input = sum $ map (uncurry manhattan) galaxyPairs
-  where
-    gmap = lines input
-    expanded = expandMap 1000000 $ makeGalaxyMap gmap
-    galaxyPairs = pairs $ galaxyMapCoords expanded
+star1 = solve 2
+star2 = solve 1000000
 
 main = do
   input <- readFile "input.txt"
-  printf "Star 1: %d\n" $ star1Smarter input
-  printf "Star 2: %d\n" $ star2Smarter input
-
+  printf "Star 1: %d\n" $ star1 input
+  printf "Star 2: %d\n" $ star2 input
 
