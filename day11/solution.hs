@@ -58,8 +58,8 @@ expandSmarter n = transpose . map (expand updateY 0) . transpose . map (expand u
       Expansion -> Expansion : expand update (currentExpansion + 1) entries
       Galaxy coords -> Galaxy (update currentExpansion coords) : expand update currentExpansion entries
 
-    updateY expansion (x, y) = (x, y + (n * expansion))
-    updateX expansion (x, y) = (x + (n * expansion), y)
+    updateY expansion (x, y) = (x, y + (n - 1) * expansion)
+    updateX expansion (x, y) = (x + (n - 1) * expansion, y)
 
 galaxyMapCoords :: [[GalaxyMapEntry]] -> [Coords]
 galaxyMapCoords = concatMap coordsInLine
@@ -87,7 +87,7 @@ star1Smarter :: String -> Int
 star1Smarter input = sum $ map (uncurry manhattan) galaxyPairs
   where
     gmap = lines input
-    expanded = expandSmarter (2 - 1) $ galaxiesAndExpansions gmap
+    expanded = expandSmarter 2 $ galaxiesAndExpansions gmap
     galaxyPairs = pairs $ galaxyMapCoords expanded
 
 -- Doesn't halt, even for test input
@@ -102,7 +102,7 @@ star2Smarter :: String -> Int
 star2Smarter input = sum $ map (uncurry manhattan) galaxyPairs
   where
     gmap = lines input
-    expanded = expandSmarter (1000000 - 1) $ galaxiesAndExpansions gmap
+    expanded = expandSmarter 1000000 $ galaxiesAndExpansions gmap
     galaxyPairs = pairs $ galaxyMapCoords expanded
 
 main = do
